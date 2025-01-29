@@ -102,9 +102,9 @@ const App = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen p-5 gap-4">
+    <div className="flex h-screen p-5 gap-4">
       {/* Drawing Area - 70% */}
-      <div className="lg:w-7/10 w-full flex flex-col items-center">
+      <div className="w-7/10 w-full flex flex-col items-center">
         <h1 className="text-2xl font-bold mb-4">Multiplayer Drawing Game</h1>
 
         {/* Controls */}
@@ -169,7 +169,7 @@ const App = () => {
       </div>
 
       {/* Chat Area - 30% */}
-      <div className="lg:w-3/10 w-full p-4 border-2 border-gray-300 bg-gray-100 rounded-lg flex flex-col">
+      <div className="w-3/10 p-4 border-2 border-gray-300 bg-gray-100 rounded-lg flex flex-col">
         <h2 className="text-xl font-semibold mb-3">Chat</h2>
 
         <div className="flex-1 overflow-y-auto border-b border-gray-400 mb-3 p-2 h-64">
