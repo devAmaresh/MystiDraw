@@ -22,7 +22,7 @@ export const createRoom = async (req, res) => {
     const newRoom = new Room({
       roomId,
       password,
-      participants: [{ username, score: 0 }], // Add creator as the first participant
+      participants: [{ username, score: 0, admin: true }], // Add creator as the first participant
     });
 
     // Save to DB

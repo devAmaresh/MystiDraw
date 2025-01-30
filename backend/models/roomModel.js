@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const participantSchema = new mongoose.Schema({
   username: { type: String, required: true },
   score: { type: Number, default: 0 },
+  admin: { type: Boolean, default: false },
 });
 
 // Define the Room schema
