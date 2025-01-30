@@ -17,11 +17,12 @@ interface DrawData {
 interface ChatMessage {
   message: string;
   roomId: string;
+  username: string;
 }
 
 const Page = () => {
   const { roomId } = useParams<{ roomId: string }>();
-  const [messages, setMessages] = useState<string[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState<string>("");
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [currentColor, setCurrentColor] = useState<string>("black");
@@ -73,9 +74,16 @@ const Page = () => {
         });
 
         // Listen for incoming chat messages
-        socket.on("chatMessage", (msg: string) => {
-          console.log("Received chat message:", msg);
-          setMessages((prev) => [...prev, msg]);
+        socket.on("chatMessage", (data: ChatMessage) => {
+          console.log("Received chat message:", data);
+          setMessages((prev) => [
+            ...prev,
+            {
+              message: data.message,
+              roomId: data.roomId || "",
+              username: data.username,
+            }, // Ensure roomId and username are defined
+          ]);
         });
 
         // Cleanup listeners on unmount
@@ -147,7 +155,11 @@ const Page = () => {
   // Chat functions
   const sendMessage = () => {
     if (message.trim() === "") return;
-    const chatMessage: ChatMessage = { message, roomId: roomId || "" };
+    const chatMessage: ChatMessage = {
+      message,
+      roomId: roomId || "",
+      username: localStorage.getItem("username") || "",
+    };
     socket.emit("chatMessage", chatMessage);
     setMessage("");
   };
@@ -178,7 +190,9 @@ const Page = () => {
           onMouseUp={stopDrawing}
           onMouseMove={draw}
           onMouseLeave={stopDrawing}
-          className="border-2 border-gray-300 rounded-lg shadow-lg w-full h-[80vh]"
+          className={`border-2 border-gray-300 rounded-lg shadow-lg w-full h-[80vh]
+            ${isErasing ? "cursor-crosshair" : ""}
+            `}
         />
       </div>
 
@@ -289,28 +303,37 @@ const Page = () => {
 
           {/* Chat Section */}
           <div className="mt-4">
-            <div className="mb-4 h-64 overflow-y-auto bg-gray-200 p-4 rounded">
+            <div className="mb-2 h-64 overflow-y-auto bg-gray-200 p-4 rounded">
               {messages.map((msg, index) => (
                 <p key={index} className="text-sm">
-                  {msg}
+                  <span className="mr-1 font-semibold">
+                    {msg.username ? <>{msg.username}:</> : <></>}
+                  </span>
+                  {msg.message}
                 </p>
               ))}
             </div>
 
             <div className="flex space-x-2">
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="w-full p-2 border border-gray-300 rounded"
-              />
-              <button
-                className="bg-blue-500 text-white p-2 rounded"
-                onClick={sendMessage}
-              >
-                Send
-              </button>
+              <form>
+                <input
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Type a message..."
+                  className="w-full p-2 border border-gray-300 rounded"
+                />
+                <button
+                  className="bg-blue-500 text-white p-2 rounded"
+                  onClick={(e: any) => {
+                    e.preventDefault();
+                    sendMessage();
+                  }}
+                  type="submit"
+                >
+                  Send
+                </button>
+              </form>
             </div>
           </div>
         </div>

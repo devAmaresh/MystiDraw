@@ -40,8 +40,8 @@ io.on("connection", (socket) => {
 
   // Chat message event - broadcast to the room
   socket.on("chatMessage", (data) => {
-    console.log("Received chat message:", data.message);
-    io.to(data.roomId).emit("chatMessage", data.message);
+    console.log("Received chat message:", data);
+    io.to(data.roomId).emit("chatMessage", data);
   });
 
   // Disconnect event
