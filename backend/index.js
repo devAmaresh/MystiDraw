@@ -2,10 +2,12 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
-
+import { connectDB } from "./db/dbconnection.js";
+import roomRoutes from "./routes/roomRoutes.js";
 const app = express();
+app.use(express.json());
 const server = http.createServer(app);
-
+connectDB();
 // Configure Socket.IO with CORS
 const io = new Server(server, {
   cors: {
@@ -17,18 +19,14 @@ const io = new Server(server, {
 // Enable CORS
 app.use(cors());
 
-// Serve static files (for frontend)
-app.use(express.static("public"));
-
 // Socket.IO connection
 io.on("connection", (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
-  // Join a room
   socket.on("joinRoom", (roomId, username) => {
     socket.join(roomId); // Join the room
     console.log(`${username} joined room: ${roomId}`);
-    // Emit a welcome message to the room
+    // Broadcast to the room
     io.to(roomId).emit("chatMessage", `${username} has joined the room.`);
   });
 
@@ -49,6 +47,6 @@ io.on("connection", (socket) => {
     console.log(`User Disconnected: ${socket.id}`);
   });
 });
-
+app.use("/api/rooms", roomRoutes);
 // Start the server
 server.listen(3000, () => console.log("Server running on port 3000"));

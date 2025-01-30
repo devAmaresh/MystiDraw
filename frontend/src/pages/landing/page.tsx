@@ -1,15 +1,17 @@
+import { message } from "antd";
+import axios from "axios";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
-
-const socket: Socket = io("http://localhost:3000");
 
 const Page = () => {
   const [username, setUsername] = useState(
     localStorage.getItem("username") || ""
   );
+  const [joinRoomId, setJoinRoomId] = useState("");
+  const [joinRoomPassword, setJoinRoomPassword] = useState("");
   const [roomId, setRoomId] = useState(uuidv4());
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,13 +21,44 @@ const Page = () => {
 
   const handleJoinRoom = () => {
     if (!username) {
-      alert("Please enter a username");
+      message.error("Please enter a username");
+      return;
+    }
+    if (!joinRoomId) {
+      message.error("Please enter a room ID");
+      return;
+    }
+    if (!joinRoomPassword.trim()) {
+      message.error("Please enter a password");
       return;
     }
     if (username && roomId) {
       localStorage.setItem("username", username);
-      socket.emit("joinRoom", roomId, username);
-      navigate(`/play/${roomId}`);
+      async function joinRoom() {
+        try {
+          const res = await axios.post(
+            "http://localhost:3000/api/rooms/join",
+            {
+              username: username,
+              roomId: joinRoomId,
+              password: joinRoomPassword,
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          console.log(res);
+          if (res.status === 200) {
+            navigate(`/play/${joinRoomId}`);
+          }
+        } catch (err: any) {
+          message.error(err.response.data.message);
+          console.log(err);
+        }
+      }
+      joinRoom();
     }
   };
 
@@ -36,8 +69,31 @@ const Page = () => {
     }
     if (username) {
       localStorage.setItem("username", username);
-      socket.emit("joinRoom", roomId, username);
-      navigate(`/play/${roomId}`);
+      async function createRoom() {
+        try {
+          const res = await axios.post(
+            "http://localhost:3000/api/rooms/create",
+            {
+              roomId: roomId,
+              username: username,
+              password: password,
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          console.log(res);
+          if (res.status === 201) {
+            navigate(`/play/${roomId}`);
+          }
+        } catch (err: any) {
+          message.error(err.response.data.message);
+          console.log(err);
+        }
+      }
+      createRoom();
     }
   };
 
@@ -64,8 +120,15 @@ const Page = () => {
             <input
               type="text"
               placeholder="Room ID"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
+              value={joinRoomId}
+              onChange={(e) => setJoinRoomId(e.target.value)}
+              className="w-48 p-2 rounded-lg text-black border"
+            />
+            <input
+              type="password"
+              placeholder="Enter Password"
+              value={joinRoomPassword}
+              onChange={(e) => setJoinRoomPassword(e.target.value)}
               className="w-48 p-2 rounded-lg text-black border"
             />
             <button
@@ -87,6 +150,13 @@ const Page = () => {
               value={roomId}
               onChange={(e) => setRoomId(e.target.value)}
               readOnly
+              className="w-48 p-2 rounded-lg text-black border"
+            />
+            <input
+              type="password"
+              placeholder="Enter Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-48 p-2 rounded-lg text-black border"
             />
             <button

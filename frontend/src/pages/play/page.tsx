@@ -22,6 +22,7 @@ interface ChatMessage {
 
 const Page = () => {
   const { roomId } = useParams<{ roomId: string }>();
+  const chatRef = useRef<HTMLDivElement | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState<string>("");
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
@@ -54,7 +55,7 @@ const Page = () => {
         ctx.lineWidth = currentStroke;
         ctx.strokeStyle = currentColor;
         ctxRef.current = ctx;
-
+        socket.emit("joinRoom", roomId, username);
         // Listen for incoming drawing events
         socket.on("draw", (data: DrawData) => {
           console.log("Received draw event:", data);
@@ -84,6 +85,9 @@ const Page = () => {
               username: data.username,
             }, // Ensure roomId and username are defined
           ]);
+          if (chatRef.current) {
+            chatRef.current.scrollTop = chatRef.current.scrollHeight;
+          }
         });
 
         // Cleanup listeners on unmount
@@ -303,7 +307,10 @@ const Page = () => {
 
           {/* Chat Section */}
           <div className="mt-4">
-            <div className="mb-2 h-64 overflow-y-auto bg-gray-200 p-4 rounded">
+            <div
+              className="mb-2 h-64 overflow-y-auto bg-gray-200 p-4 rounded"
+              ref={chatRef}
+            >
               {messages.map((msg, index) => (
                 <p key={index} className="text-sm">
                   <span className="mr-1 font-semibold">
