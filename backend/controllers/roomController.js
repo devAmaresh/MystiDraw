@@ -1,5 +1,5 @@
 import Room from "../models/roomModel.js";
-
+import jwt from "jsonwebtoken";
 // Create a room
 export const createRoom = async (req, res) => {
   try {
@@ -31,10 +31,20 @@ export const createRoom = async (req, res) => {
     // Convert to object and remove password
     const roomData = newRoom.toObject();
     delete roomData.password;
-
-    res
-      .status(201)
-      .json({ message: "Room created successfully", room: roomData });
+    const token = jwt.sign(
+      {
+        roomId: roomData.roomId,
+        username: username,
+        admin: true,
+        expiresIn: "1d", // Expires in 1 day
+      },
+      process.env.JWT_SECRET
+    );
+    res.status(201).json({
+      message: "Room created successfully",
+      room: roomData,
+      token: token,
+    });
   } catch (error) {
     console.error("Error creating room:", error);
     res.status(500).json({ message: "Server error" });
@@ -80,10 +90,21 @@ export const joinRoom = async (req, res) => {
     // Convert to object and remove password
     const roomData = room.toObject();
     delete roomData.password;
+    const token = jwt.sign(
+      {
+        roomId: roomData.roomId,
+        username: username,
+        expiresIn: "1d",
+        admin: false,
+      },
+      process.env.JWT_SECRET
+    );
 
-    res
-      .status(200)
-      .json({ message: "Joined room successfully", room: roomData });
+    res.status(200).json({
+      message: "Joined room successfully",
+      room: roomData,
+      token: token,
+    });
   } catch (error) {
     console.error("Error joining room:", error);
     res.status(500).json({ message: "Server error" });

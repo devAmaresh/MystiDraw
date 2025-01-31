@@ -4,6 +4,10 @@ import { Server } from "socket.io";
 import cors from "cors";
 import { connectDB } from "./db/dbconnection.js";
 import roomRoutes from "./routes/roomRoutes.js";
+import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
+import logoutRoutes from "./routes/logoutRoutes.js";
+dotenv.config();
 const app = express();
 app.use(express.json());
 const server = http.createServer(app);
@@ -19,15 +23,41 @@ const io = new Server(server, {
 // Enable CORS
 app.use(cors());
 
+//middleware to check the jwt token in the header of the socket connection
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (token) {
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        return next(new Error("Authentication error"));
+      }
+      socket.decoded = decoded;
+      next();
+    });
+  } else {
+    next(new Error("Authentication error"));
+  }
+});
+
 // Socket.IO connection
 io.on("connection", (socket) => {
   console.log(`User Connected: ${socket.id}`);
-
+  const { decoded } = socket;
   socket.on("joinRoom", (roomId, username) => {
-    socket.join(roomId); // Join the room
-    console.log(`${username} joined room: ${roomId}`);
+    socket.join(decoded.roomId); // Join the room
+    console.log(`${decoded.username} joined room: ${decoded.roomId}`);
     // Broadcast to the room
-    io.to(roomId).emit("chatMessage", `${username} has joined the room.`);
+    io.to(roomId).emit("joinMessage", {
+      message: `${username} has joined the room.`,
+    });
+  });
+  socket.on("leaveRoom", (roomId, username) => {
+    console.log(`${username} left room: ${roomId}`);
+    socket.leave(roomId);
+    io.to(roomId).emit("leaveMessage", {
+      message: `${username} has left the room.`,
+    });
   });
 
   // Drawing event - broadcast to the room
@@ -39,7 +69,7 @@ io.on("connection", (socket) => {
   // Chat message event - broadcast to the room
   socket.on("chatMessage", (data) => {
     console.log("Received chat message:", data);
-    io.to(data.roomId).emit("chatMessage", data);
+    io.to(decoded.roomId).emit("chatMessage", data);
   });
 
   // Disconnect event
@@ -48,5 +78,6 @@ io.on("connection", (socket) => {
   });
 });
 app.use("/api/rooms", roomRoutes);
+app.use("/api/logout", logoutRoutes);
 // Start the server
 server.listen(3000, () => console.log("Server running on port 3000"));

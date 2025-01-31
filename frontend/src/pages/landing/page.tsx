@@ -1,14 +1,16 @@
 import { message } from "antd";
 import axios from "axios";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
-
+import Cookies from "js-cookie";
 const Page = () => {
   const [username, setUsername] = useState(
     localStorage.getItem("username") || ""
   );
-  const [joinRoomId, setJoinRoomId] = useState("");
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const [joinRoomId, setJoinRoomId] = useState(queryParams.get("roomId") || "");
   const [joinRoomPassword, setJoinRoomPassword] = useState("");
   const [roomId, setRoomId] = useState(uuidv4());
   const [password, setPassword] = useState("");
@@ -51,6 +53,7 @@ const Page = () => {
           );
           console.log(res);
           if (res.status === 200) {
+            Cookies.set("token", res.data.token, { expires: 1 });
             navigate(`/play/${joinRoomId}`);
           }
         } catch (err: any) {
@@ -86,6 +89,7 @@ const Page = () => {
           );
           console.log(res);
           if (res.status === 201) {
+            Cookies.set("token", res.data.token, { expires: 1 });
             navigate(`/play/${roomId}`);
           }
         } catch (err: any) {
