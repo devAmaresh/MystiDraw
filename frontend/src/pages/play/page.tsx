@@ -5,6 +5,7 @@ import Cookies from "js-cookie";
 import { message as m, Slider, Tag } from "antd";
 import Navbar from "../components/play/navbar";
 import { LuEraser } from "react-icons/lu";
+import { backend_url } from "../utils/backend_url";
 interface DrawData {
   x: number;
   y: number;
@@ -23,7 +24,7 @@ interface ChatMessage {
 
 const Page = () => {
   const token = Cookies.get("token");
-  const socket: Socket = io("http://localhost:3000", {
+  const socket: Socket = io(`${backend_url}`, {
     auth: {
       token,
     },

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import Cookies from "js-cookie";
+import { backend_url } from "../utils/backend_url";
 const Page = () => {
   const [username, setUsername] = useState(
     localStorage.getItem("username") || ""
@@ -40,7 +41,7 @@ const Page = () => {
       async function joinRoom() {
         try {
           const res = await axios.post(
-            "http://localhost:3000/api/rooms/join",
+            `${backend_url}/api/rooms/join`,
             {
               username: username,
               roomId: joinRoomId,
@@ -76,7 +77,7 @@ const Page = () => {
       async function createRoom() {
         try {
           const res = await axios.post(
-            "http://localhost:3000/api/rooms/create",
+            `${backend_url}/api/rooms/create`,
             {
               roomId: roomId,
               username: username,
