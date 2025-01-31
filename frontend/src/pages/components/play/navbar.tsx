@@ -55,6 +55,7 @@ const navbar = () => {
           icon={<LuLogOut />}
           disabled={loading}
           loading={loading}
+          type="dashed"
         >
           Exit
         </Button>
