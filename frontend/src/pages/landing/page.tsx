@@ -16,6 +16,7 @@ const Page = () => {
   const [roomId, setRoomId] = useState(uuidv4());
   const [password, setPassword] = useState("");
   const [createRoom, setCreateRoom] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,6 +41,7 @@ const Page = () => {
       localStorage.setItem("username", username);
       async function joinRoom() {
         try {
+          setLoading(true);
           const res = await axios.post(
             `${backend_url}/api/rooms/join`,
             {
@@ -61,6 +63,8 @@ const Page = () => {
         } catch (err: any) {
           message.error(err.response.data.message);
           console.log(err);
+        } finally {
+          setLoading(false);
         }
       }
       joinRoom();
@@ -76,6 +80,7 @@ const Page = () => {
       localStorage.setItem("username", username);
       async function createRoom() {
         try {
+          setLoading(true);
           const res = await axios.post(
             `${backend_url}/api/rooms/create`,
             {
@@ -97,6 +102,8 @@ const Page = () => {
         } catch (err: any) {
           message.error(err.response.data.message);
           console.log(err);
+        } finally {
+          setLoading(false);
         }
       }
       createRoom();
@@ -140,8 +147,9 @@ const Page = () => {
             <button
               onClick={handleJoinRoom}
               className="px-6 py-2 bg-green-500 hover:bg-green-600 rounded-lg font-semibold transition duration-300 hover:cursor-pointer"
+              disabled={loading}
             >
-              Join Room
+              {loading ? "Loading ..." : "Join Room"}
             </button>
           </div>
         </div>
@@ -184,8 +192,9 @@ const Page = () => {
               <button
                 onClick={handleCreateRoom}
                 className="hover:cursor-pointer px-6 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg font-semibold transition duration-300"
+                disabled={loading}
               >
-                Create Room
+                {loading ? "Creating Room..." : "Create Room"}
               </button>
             </div>
           </div>

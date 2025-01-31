@@ -4,15 +4,18 @@ import { LuLogOut } from "react-icons/lu";
 import Cookies from "js-cookie";
 import axios from "axios";
 import { backend_url } from "../../utils/backend_url";
+import { useState } from "react";
 const navbar = () => {
   const username = localStorage.getItem("username");
   const { roomId } = useParams<{ roomId: string }>();
   const domain = window.location.origin;
   const { Text } = Typography;
   const nav = useNavigate();
+  const [loading, setLoading] = useState(false);
   const handleLogout = () => {
     const logout = async () => {
       try {
+        setLoading(true);
         const res = await axios.post(
           `${backend_url}/api/logout`,
           { roomId },
@@ -33,6 +36,8 @@ const navbar = () => {
       } catch (error) {
         message.error("Exiting room failed");
         console.log(error);
+      } finally {
+        setLoading(false);
       }
     };
     logout();
@@ -45,7 +50,12 @@ const navbar = () => {
         <Text copyable={{ text: `${domain}?roomId=${roomId}` }} />
       </div>
       <div>
-        <Button onClick={handleLogout} icon={<LuLogOut />}>
+        <Button
+          onClick={handleLogout}
+          icon={<LuLogOut />}
+          disabled={loading}
+          loading={loading}
+        >
           Exit
         </Button>
       </div>
