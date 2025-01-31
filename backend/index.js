@@ -15,7 +15,7 @@ connectDB();
 // Configure Socket.IO with CORS
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Replace with your frontend URL
+    origin: `${process.env.FRONTEND_URL}`, // Replace with your frontend URL
     methods: ["GET", "POST"],
   },
 });

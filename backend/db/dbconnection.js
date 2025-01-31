@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
+import dotenv from "dotenv";
+dotenv.config();
 
-// Define the MongoDB connection URI
-const MONGODB_URI = "mongodb://127.0.0.1:27017/doodle";
+const MONGODB_URI = `${process.env.MONGODB_URI}`;
 
 // Function to connect to MongoDB
 const connectDB = async () => {
