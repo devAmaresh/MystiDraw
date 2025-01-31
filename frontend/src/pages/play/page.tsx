@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import Cookies from "js-cookie";
-import { message as m, Slider, Tag } from "antd";
+import { message as m, Slider, Tag, notification } from "antd";
 import Navbar from "../components/play/navbar";
 import { LuEraser } from "react-icons/lu";
 import { backend_url } from "../utils/backend_url";
@@ -143,6 +143,16 @@ const Page = () => {
             },
           ]);
         });
+        socket.on("adminLeft", (data: any) => {
+          notification.info({
+            message: data.message,
+            description: "You will be redirected to the home page",
+            duration: 0,
+          });
+          localStorage.removeItem("username");
+          Cookies.remove("token");
+          navigate("/");
+        });
         if (chatRef.current) {
           chatRef.current.scrollTop = chatRef.current.scrollHeight;
         }
@@ -152,6 +162,7 @@ const Page = () => {
           socket.off("chatMessage");
           socket.off("joinMessage");
           socket.off("leaveMessage");
+          socket.off("adminLeft");
         };
       }
     }

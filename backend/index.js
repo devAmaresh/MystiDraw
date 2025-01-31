@@ -58,6 +58,11 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("leaveMessage", {
       message: `${username} has left the room.`,
     });
+    if (decoded.admin === true) {
+      io.to(roomId).emit("adminLeft", {
+        message: `Admin has left the room. The room will be closed .`,
+      });
+    }
   });
 
   // Drawing event - broadcast to the room

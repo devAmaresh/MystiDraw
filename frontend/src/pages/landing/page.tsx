@@ -112,18 +112,18 @@ const Page = () => {
 
   return (
     <div className="landing-page min-h-screen bg-gradient-to-r from-purple-500 to-indigo-600 flex flex-col items-center justify-center">
-      <h1 className="text-5xl font-bold mb-8 animate-bounce">
+      <h1 className="text-5xl font-bold mb-8">
         Welcome to Multiplayer Drawing Game
       </h1>
       <div className="mx-auto p-5 bg-amber-400 rounded-4xl">
         {/* Username Input */}
-        <div className="">Username</div>
+        <div className="mb-0.5">Username</div>
         <input
           type="text"
           placeholder="Enter your username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="w-full p-2 bg-white text-black border-2 rounded-md mb-3"
+          className="w-full p-2 bg-white text-black border rounded-md mb-3 focus:outline-none"
         />
 
         {/* Join Room Section */}
