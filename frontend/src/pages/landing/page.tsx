@@ -1,4 +1,4 @@
-import { message } from "antd";
+import { Button, Divider, message } from "antd";
 import axios from "axios";
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -14,6 +14,7 @@ const Page = () => {
   const [joinRoomPassword, setJoinRoomPassword] = useState("");
   const [roomId, setRoomId] = useState(uuidv4());
   const [password, setPassword] = useState("");
+  const [createRoom, setCreateRoom] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -144,33 +145,50 @@ const Page = () => {
           </div>
         </div>
 
-        {/* Create Room Section */}
-        <div className="bg-white bg-opacity-10 p-6 rounded-lg shadow-lg">
-          <div className="text-xl font-semibold mb-4">Create Room</div>
-          <div className="flex items-center space-x-4">
-            <input
-              type="text"
-              placeholder="Room ID"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              readOnly
-              className="w-48 p-2 rounded-lg text-black border"
-            />
-            <input
-              type="password"
-              placeholder="Enter Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-48 p-2 rounded-lg text-black border"
-            />
-            <button
-              onClick={handleCreateRoom}
-              className="hover:cursor-pointer px-6 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg font-semibold transition duration-300"
+        <Divider variant="dashed" style={{ borderColor: "black" }}>
+          or
+        </Divider>
+
+        {!createRoom && (
+          <div className="text-center">
+            <Button
+              type="primary"
+              onClick={() => setCreateRoom(!createRoom)}
+              className="mb-4"
             >
               Create Room
-            </button>
+            </Button>
           </div>
-        </div>
+        )}
+        {/* Create Room Section */}
+        {createRoom && (
+          <div className="bg-white bg-opacity-10 p-6 rounded-lg shadow-lg">
+            <div className="text-xl font-semibold mb-4">Create Room</div>
+            <div className="flex items-center space-x-4">
+              <input
+                type="text"
+                placeholder="Room ID"
+                value={roomId}
+                onChange={(e) => setRoomId(e.target.value)}
+                readOnly
+                className="w-48 p-2 rounded-lg text-black border"
+              />
+              <input
+                type="password"
+                placeholder="Enter Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-48 p-2 rounded-lg text-black border"
+              />
+              <button
+                onClick={handleCreateRoom}
+                className="hover:cursor-pointer px-6 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg font-semibold transition duration-300"
+              >
+                Create Room
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
