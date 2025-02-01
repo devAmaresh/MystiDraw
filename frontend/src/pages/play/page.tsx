@@ -56,14 +56,34 @@ const Page = () => {
   });
   // Join room when component mounts
   useEffect(() => {
+    if (!username || !roomId) return;
     if (username && roomId) {
       setUsername(username);
-      console.log("Joining room:", roomId);
-      socket.emit("joinRoom", roomId, username);
     }
     const handleBeforeUnload = () => {
       socket.emit("leaveRoom", roomId, username);
     };
+
+    // Notify user if socket disconnects
+    socket.on("disconnect", () => {
+      m.error("Connection lost! Trying to reconnect...");
+    });
+
+    // Notify user if there’s a connection error
+    socket.on("connect_error", () => {
+      m.error("Connection error! Please check your internet.");
+    });
+
+    // Notify user on reconnection attempt
+    socket.on("reconnect_attempt", () => {
+      m.warning("Attempting to reconnect...");
+    });
+
+    // Notify user when connection is restored
+    socket.on("connect", () => {
+      m.success("Reconnected successfully!");
+      socket.emit("joinRoom", roomId, username); // Rejoin the room
+    });
 
     window.addEventListener("beforeunload", handleBeforeUnload);
 
@@ -71,6 +91,10 @@ const Page = () => {
       socket.emit("leaveRoom", roomId, username);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       socket.disconnect();
+      socket.off("disconnect");
+      socket.off("connect_error");
+      socket.off("reconnect_attempt");
+      socket.off("connect");
     };
   }, []);
 
