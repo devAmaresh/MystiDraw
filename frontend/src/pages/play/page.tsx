@@ -66,7 +66,7 @@ const Page = () => {
 
     // Notify user if socket disconnects
     socket.on("disconnect", () => {
-      m.error("Connection lost! Trying to reconnect...");
+      console.log("Disconnected from server");  
     });
 
     // Notify user if there’s a connection error
