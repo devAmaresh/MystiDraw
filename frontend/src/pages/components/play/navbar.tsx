@@ -53,7 +53,6 @@ const navbar = () => {
         <Button
           onClick={handleLogout}
           icon={<LuLogOut />}
-          disabled={loading}
           loading={loading}
           type="dashed"
         >

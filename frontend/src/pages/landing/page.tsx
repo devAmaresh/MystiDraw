@@ -1,8 +1,7 @@
 import { Button, Divider, message } from "antd";
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { v4 as uuidv4 } from "uuid";
 import Cookies from "js-cookie";
 import { backend_url } from "../utils/backend_url";
 const Page = () => {
@@ -13,16 +12,11 @@ const Page = () => {
   const queryParams = new URLSearchParams(location.search);
   const [joinRoomId, setJoinRoomId] = useState(queryParams.get("roomId") || "");
   const [joinRoomPassword, setJoinRoomPassword] = useState("");
-  const [roomId, setRoomId] = useState(uuidv4());
+  const [roomId, setRoomId] = useState("");
   const [password, setPassword] = useState("");
   const [createRoom, setCreateRoom] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Automatically generate roomId on load
-    setRoomId(uuidv4());
-  }, []);
 
   const handleJoinRoom = () => {
     if (!username) {
@@ -37,7 +31,7 @@ const Page = () => {
       message.error("Please enter a password");
       return;
     }
-    if (username && roomId) {
+    if (username && joinRoomId) {
       localStorage.setItem("username", username);
       async function joinRoom() {
         try {
@@ -179,7 +173,6 @@ const Page = () => {
                 placeholder="Room ID"
                 value={roomId}
                 onChange={(e) => setRoomId(e.target.value)}
-                readOnly
                 className="w-48 p-2 rounded-lg text-black border"
               />
               <input
