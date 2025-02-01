@@ -39,7 +39,7 @@ io.use((socket, next) => {
     next(new Error("Authentication error"));
   }
 });
-
+const roomDrawHistory = new Map();
 // Socket.IO connection
 io.on("connection", (socket) => {
   console.log(`User Connected: ${socket.id}`);
@@ -47,10 +47,13 @@ io.on("connection", (socket) => {
   socket.on("joinRoom", (roomId, username) => {
     socket.join(decoded.roomId); // Join the room
     console.log(`${decoded.username} joined room: ${decoded.roomId}`);
+    const history = roomDrawHistory.get(roomId) || [];
     // Broadcast to the room
     io.to(roomId).emit("joinMessage", {
       message: `${username} has joined the room.`,
     });
+
+    socket.emit("canvasHistory", history);
   });
   socket.on("leaveRoom", (roomId, username) => {
     console.log(`${username} left room: ${roomId}`);
@@ -68,6 +71,12 @@ io.on("connection", (socket) => {
   // Drawing event - broadcast to the room
   socket.on("draw", (data) => {
     console.log("Received draw data:", data);
+    if (!roomDrawHistory.has(data.roomId)) {
+      roomDrawHistory.set(data.roomId, []);
+    }
+    roomDrawHistory.get(data.roomId).push(data);
+
+    // Broadcast to other users
     io.to(data.roomId).emit("draw", data);
   });
 

@@ -91,20 +91,26 @@ const Page = () => {
         ctx.strokeStyle = currentColor;
         ctxRef.current = ctx;
         // Listen for incoming drawing events
-        socket.on("draw", (data: DrawData) => {
-          console.log("Received draw event:", data);
-          setCurrentColor(data.color);
-          setCurrentStroke(data.stroke);
-
+        const handleDrawEvent = (data: DrawData) => {
           if (ctxRef.current) {
+            ctxRef.current.strokeStyle = data.color;
+            ctxRef.current.lineWidth = data.stroke;
             ctxRef.current.beginPath();
-            if (data.lastX != null && data.lastY != null) {
+            if (data.lastX !== null && data.lastY !== null) {
               ctxRef.current.moveTo(data.lastX, data.lastY);
             } else {
               ctxRef.current.moveTo(data.x, data.y);
             }
             ctxRef.current.lineTo(data.x, data.y);
             ctxRef.current.stroke();
+          }
+        };
+        socket.on("draw", handleDrawEvent);
+        socket.on("canvasHistory", (history: DrawData[]) => {
+          const canvas = canvasRef.current;
+          if (canvas && ctxRef.current) {
+            ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
+            history.forEach(handleDrawEvent);
           }
         });
 
@@ -167,7 +173,6 @@ const Page = () => {
       }
     }
   }, []);
-
   // Update canvas context properties when currentColor or currentStroke changes
   useEffect(() => {
     if (ctxRef.current) {
