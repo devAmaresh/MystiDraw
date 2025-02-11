@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 import Cookies from "js-cookie";
 import { message as m, Slider, Tag } from "antd";
 import Navbar from "../components/play/navbar";
@@ -24,20 +24,7 @@ interface ChatMessage {
 
 const Page = () => {
   const token = Cookies.get("token");
-  useEffect(() => {
-    if (!token) {
-      m.error("You must be logged in to access this page");
-      navigate("/");
-    }
-  }, [token]);
-  const socket: Socket = io(`${backend_url}`, {
-    auth: {
-      token,
-    },
-  });
-
   const navigate = useNavigate();
-
   const { roomId } = useParams<{ roomId: string }>();
   const chatRef = useRef<HTMLDivElement | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -55,136 +42,133 @@ const Page = () => {
     x: null,
     y: null,
   });
-  // Join room when component mounts
+
+  // Socket initialization with useMemo
+  const socket = useMemo(() => {
+    if (!token) return null;
+    return io(`${backend_url}`, {
+      auth: { token },
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+  }, [token]);
+
   useEffect(() => {
-    if (!username || !roomId) return;
-    if (username && roomId) {
+    if (!token) {
+      m.error("You must be logged in to access this page");
+      navigate("/");
+    }
+  }, [token, navigate]);
+
+  useEffect(() => {
+    if (!socket || !roomId) return;
+
+    const handleConnect = () => {
+      const username = localStorage.getItem("username") || "";
       setUsername(username);
       socket.emit("joinRoom", roomId, username);
+    };
+
+    // Initial join or reconnection
+    if (socket.connected) {
+      handleConnect();
     }
+
+    socket.on("connect", handleConnect);
+
+    // Connection events
+    socket.on("disconnect", () => {
+      m.warning("Disconnected from server. Trying to reconnect...");
+    });
+
+    socket.io.on("reconnect", () => {
+      m.info("Reconnected to server!");
+    });
+
+    // Cleanup
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("disconnect");
+      socket.io.off("reconnect");
+    };
+  }, [socket, roomId]);
+
+  useEffect(() => {
+    if (!socket) return;
+
     const handleBeforeUnload = () => {
       socket.emit("leaveRoom", roomId, username);
     };
 
-    // Notify user if socket disconnects
-    socket.on("disconnect", () => {
-      console.log("Disconnected from server");
-    });
-
-    // Notify user if there’s a connection error
-    socket.on("connect_error", () => {
-      m.error("Connection error! Please check your internet.");
-    });
-
-    // Notify user on reconnection attempt
-    socket.on("reconnect_attempt", () => {
-      m.warning("Attempting to reconnect...");
-      socket.emit("joinRoom", roomId, username);
-    });
-
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      socket.emit("leaveRoom", roomId, username);
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      socket.disconnect();
-      socket.off("disconnect");
-      socket.off("connect_error");
-      socket.off("reconnect_attempt");
-      socket.off("connect");
+      socket.emit("leaveRoom", roomId, username);
     };
-  }, [roomId, username]);
+  }, [socket, roomId, username]);
 
-  // Initialize canvas and socket listeners (runs only once)
+  // Canvas initialization
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        // Set canvas dimensions to match its display size
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = canvas.clientWidth * dpr;
-        canvas.height = canvas.clientHeight * dpr;
-        ctx.scale(dpr, dpr);
+    if (!canvas || !socket) return;
 
-        ctx.lineCap = "round";
-        ctx.lineWidth = currentStroke;
-        ctx.strokeStyle = currentColor;
-        ctxRef.current = ctx;
-        // Listen for incoming drawing events
-        const handleDrawEvent = (data: DrawData) => {
-          if (ctxRef.current) {
-            ctxRef.current.strokeStyle = data.color;
-            ctxRef.current.lineWidth = data.stroke;
-            ctxRef.current.beginPath();
-            if (data.lastX !== null && data.lastY !== null) {
-              ctxRef.current.moveTo(data.lastX, data.lastY);
-            } else {
-              ctxRef.current.moveTo(data.x, data.y);
-            }
-            ctxRef.current.lineTo(data.x, data.y);
-            ctxRef.current.stroke();
-          }
-        };
-        socket.on("draw", handleDrawEvent);
-        socket.on("canvasHistory", (history: DrawData[]) => {
-          const canvas = canvasRef.current;
-          if (canvas && ctxRef.current) {
-            ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
-            history.forEach(handleDrawEvent);
-          }
-        });
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-        // Listen for incoming chat messages
-        socket.on("chatMessage", (data: ChatMessage) => {
-          console.log("Received chat message:", data);
-          setMessages((prev) => [
-            ...prev,
-            {
-              message: data.message,
-              roomId: data.roomId || "",
-              username: data.username,
-            }, // Ensure roomId and username are defined
-          ]);
-          if (chatRef.current) {
-            chatRef.current.scrollTop = chatRef.current.scrollHeight;
-          }
-        });
-        socket.on("joinMessage", (data: ChatMessage) => {
-          setMessages((prev) => [
-            ...prev,
-            {
-              message: data.message,
-              roomId: data.roomId || "",
-              username: "Server",
-            },
-          ]);
-        });
-        socket.on("leaveMessage", (data: ChatMessage) => {
-          setMessages((prev) => [
-            ...prev,
-            {
-              message: data.message,
-              roomId: data.roomId || "",
-              username: "Server",
-            },
-          ]);
-        });
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    ctx.scale(dpr, dpr);
 
-        if (chatRef.current) {
-          chatRef.current.scrollTop = chatRef.current.scrollHeight;
-        }
-        // Cleanup listeners on unmount
-        return () => {
-          socket.off("draw");
-          socket.off("chatMessage");
-          socket.off("joinMessage");
-          socket.off("leaveMessage");
-        };
+    ctx.lineCap = "round";
+    ctx.lineWidth = currentStroke;
+    ctx.strokeStyle = currentColor;
+    ctxRef.current = ctx;
+
+    const handleDrawEvent = (data: DrawData) => {
+      if (!ctxRef.current) return;
+
+      ctxRef.current.strokeStyle = data.color;
+      ctxRef.current.lineWidth = data.stroke;
+      ctxRef.current.beginPath();
+      ctxRef.current.moveTo(data.lastX || data.x, data.lastY || data.y);
+      ctxRef.current.lineTo(data.x, data.y);
+      ctxRef.current.stroke();
+    };
+
+    socket.on("draw", handleDrawEvent);
+
+    socket.on("canvasHistory", (history: DrawData[]) => {
+      if (canvas && ctxRef.current) {
+        ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
+        history.forEach(handleDrawEvent);
       }
-    }
-  }, []);
-  // Update canvas context properties when currentColor or currentStroke changes
+    });
+
+    socket.on("chatMessage", (data: ChatMessage) => {
+      setMessages((prev) => [...prev, data]);
+      chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
+    });
+
+    socket.on("joinMessage", (data: ChatMessage) => {
+      setMessages((prev) => [...prev, { ...data, username: "Server" }]);
+    });
+
+    socket.on("leaveMessage", (data: ChatMessage) => {
+      setMessages((prev) => [...prev, { ...data, username: "Server" }]);
+    });
+
+    return () => {
+      socket.off("draw");
+      socket.off("canvasHistory");
+      socket.off("chatMessage");
+      socket.off("joinMessage");
+      socket.off("leaveMessage");
+    };
+  }, [socket]);
+
   useEffect(() => {
     if (ctxRef.current) {
       ctxRef.current.strokeStyle = currentColor;
@@ -192,7 +176,7 @@ const Page = () => {
     }
   }, [currentColor, currentStroke]);
 
-  // Drawing functions
+  // Drawing handlers remain the same
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
     lastCoords.current = { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY };
@@ -204,13 +188,12 @@ const Page = () => {
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !ctxRef.current) return;
+    if (!isDrawing || !ctxRef.current || !socket || !roomId) return;
 
     const { offsetX, offsetY } = e.nativeEvent;
     const color = isErasing ? "white" : currentColor;
     const stroke = isErasing ? 20 : currentStroke;
 
-    // Emit the draw event to the server
     socket.emit("draw", {
       x: offsetX,
       y: offsetY,
@@ -221,7 +204,6 @@ const Page = () => {
       stroke,
     });
 
-    // Draw on the local canvas
     ctxRef.current.strokeStyle = color;
     ctxRef.current.lineWidth = stroke;
     ctxRef.current.beginPath();
@@ -234,16 +216,17 @@ const Page = () => {
 
   // Chat functions
   const sendMessage = () => {
-    if (message.trim() === "") return;
+    if (!message.trim() || !socket || !roomId) return;
+
     const chatMessage: ChatMessage = {
       message,
-      roomId: roomId || "",
+      roomId,
       username: localStorage.getItem("username") || "",
     };
+
     socket.emit("chatMessage", chatMessage);
     setMessage("");
   };
-
   // Handle color change
   const handleColorChange = (color: string) => {
     setCurrentColor(color);
