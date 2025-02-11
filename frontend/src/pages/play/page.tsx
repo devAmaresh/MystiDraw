@@ -61,7 +61,6 @@ const Page = () => {
     if (username && roomId) {
       setUsername(username);
       socket.emit("joinRoom", roomId, username);
-      return;
     }
     const handleBeforeUnload = () => {
       socket.emit("leaveRoom", roomId, username);
@@ -80,12 +79,7 @@ const Page = () => {
     // Notify user on reconnection attempt
     socket.on("reconnect_attempt", () => {
       m.warning("Attempting to reconnect...");
-    });
-
-    // Notify user when connection is restored
-    socket.on("connect", () => {
-      m.success("Connected successfully!");
-      socket.emit("joinRoom", roomId, username); // Rejoin the room
+      socket.emit("joinRoom", roomId, username);
     });
 
     window.addEventListener("beforeunload", handleBeforeUnload);

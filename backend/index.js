@@ -42,7 +42,6 @@ io.use((socket, next) => {
 const roomDrawHistory = new Map();
 // Socket.IO connection
 io.on("connection", (socket) => {
-  console.log(`User Connected: ${socket.id}`);
   const { decoded } = socket;
   socket.on("joinRoom", (roomId, username) => {
     socket.join(decoded.roomId); // Join the room
