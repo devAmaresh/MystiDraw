@@ -24,6 +24,12 @@ interface ChatMessage {
 
 const Page = () => {
   const token = Cookies.get("token");
+  useEffect(() => {
+    if (!token) {
+      m.error("You must be logged in to access this page");
+      navigate("/");
+    }
+  }, [token]);
   const socket: Socket = io(`${backend_url}`, {
     auth: {
       token,
@@ -31,12 +37,7 @@ const Page = () => {
   });
 
   const navigate = useNavigate();
-  useEffect(() => {
-    if (!token) {
-      m.error("You must be logged in to access this page");
-      navigate("/");
-    }
-  }, []);
+
   const { roomId } = useParams<{ roomId: string }>();
   const chatRef = useRef<HTMLDivElement | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -59,6 +60,8 @@ const Page = () => {
     if (!username || !roomId) return;
     if (username && roomId) {
       setUsername(username);
+      socket.emit("joinRoom", roomId, username);
+      return;
     }
     const handleBeforeUnload = () => {
       socket.emit("leaveRoom", roomId, username);
@@ -66,7 +69,7 @@ const Page = () => {
 
     // Notify user if socket disconnects
     socket.on("disconnect", () => {
-      console.log("Disconnected from server");  
+      console.log("Disconnected from server");
     });
 
     // Notify user if there’s a connection error
@@ -81,7 +84,7 @@ const Page = () => {
 
     // Notify user when connection is restored
     socket.on("connect", () => {
-      m.success("Reconnected successfully!");
+      m.success("Connected successfully!");
       socket.emit("joinRoom", roomId, username); // Rejoin the room
     });
 
@@ -96,7 +99,7 @@ const Page = () => {
       socket.off("reconnect_attempt");
       socket.off("connect");
     };
-  }, []);
+  }, [roomId, username]);
 
   // Initialize canvas and socket listeners (runs only once)
   useEffect(() => {
