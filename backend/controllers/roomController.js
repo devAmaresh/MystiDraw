@@ -1,49 +1,47 @@
-import Room from "../models/roomModel.js";
 import jwt from "jsonwebtoken";
+import Room from "../models/roomModel.js";
+
 // Create a room
 export const createRoom = async (req, res) => {
   try {
     const { roomId, username, password } = req.body;
 
-    // Validate input
     if (!roomId || !username || !password) {
-      return res
-        .status(400)
-        .json({ message: "Room ID, username, and password are required" });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if the room already exists
     const roomExists = await Room.findOne({ roomId });
     if (roomExists) {
       return res.status(400).json({ message: "Room already exists" });
     }
 
-    // Create new room with the first participant
     const newRoom = new Room({
       roomId,
       password,
-      participants: [{ username, score: 0, admin: true }], // Add creator as the first participant
+      participants: [{ username, score: 0, admin: true }],
     });
 
-    // Save to DB
     await newRoom.save();
 
-    // Convert to object and remove password
-    const roomData = newRoom.toObject();
-    delete roomData.password;
+    // Enhanced JWT token with userId
     const token = jwt.sign(
       {
-        roomId: roomData.roomId,
-        username: username,
-        admin: true,
-        expiresIn: "1d", // Expires in 1 day
+        roomId,
+        username,
+        userId: `${roomId}_${username}`, // Unique identifier
+        joinedAt: Date.now(),
       },
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
     );
+
+    const roomData = newRoom.toObject();
+    delete roomData.password;
+
     res.status(201).json({
       message: "Room created successfully",
       room: roomData,
-      token: token,
+      token,
     });
   } catch (error) {
     console.error("Error creating room:", error);
@@ -55,55 +53,49 @@ export const joinRoom = async (req, res) => {
   try {
     const { roomId, username, password } = req.body;
 
-    // Validate input
     if (!roomId || !username || !password) {
-      return res
-        .status(400)
-        .json({ message: "Room ID, username, and password are required" });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if the room exists
     const room = await Room.findOne({ roomId });
     if (!room) {
       return res.status(404).json({ message: "Room not found" });
     }
 
-    // Check if the password is correct
     if (room.password !== password) {
-      return res.status(401).json({ message: "Invalid password" });
+      return res.status(401).json({ message: "Incorrect password" });
     }
 
-    // Check if the username is already taken
-    const usernameExists = room.participants.some(
-      (participant) => participant.username === username
+    // Check if user already exists in room
+    const existingParticipant = room.participants.find(
+      (p) => p.username === username
     );
-    if (usernameExists) {
-      return res.status(400).json({ message: "Username already taken" });
+
+    if (!existingParticipant) {
+      // Add new participant
+      room.participants.push({ username, score: 0, admin: false });
+      await room.save();
     }
 
-    // Add the new participant
-    room.participants.push({ username, score: 0 });
-
-    // Save to DB
-    await room.save();
-
-    // Convert to object and remove password
-    const roomData = room.toObject();
-    delete roomData.password;
+    // Enhanced JWT token
     const token = jwt.sign(
       {
-        roomId: roomData.roomId,
-        username: username,
-        expiresIn: "1d",
-        admin: false,
+        roomId,
+        username,
+        userId: `${roomId}_${username}`,
+        joinedAt: Date.now(),
       },
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
     );
+
+    const roomData = room.toObject();
+    delete roomData.password;
 
     res.status(200).json({
       message: "Joined room successfully",
       room: roomData,
-      token: token,
+      token,
     });
   } catch (error) {
     console.error("Error joining room:", error);
