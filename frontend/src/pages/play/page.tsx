@@ -437,21 +437,6 @@ const Page = () => {
       });
     });
 
-    socket.on("roundComplete", (data: any) => {
-      m.success(`Round ${data.round} completed!`);
-      // Set round results to show modal
-      setRoundResults({
-        round: data.round,
-        totalRounds: data.totalRounds,
-        scores: data.scores,
-        players: players.map((player) => ({
-          ...player,
-          score: data.scores[player.userId] || 0,
-        })),
-      });
-      openModal("roundResult");
-    });
-
     // Enhanced turn end handler
     socket.on("turnEnd", (data: any) => {
       console.log("Turn ended:", data);
@@ -474,18 +459,31 @@ const Page = () => {
         scores: data.scores,
       }));
 
-      // If it's the last turn of a round, prepare round results
-      if (data.turnInRound === data.totalTurnsInRound) {
-        setRoundResults({
-          round: data.round,
-          totalRounds: data.totalRounds || 3,
-          scores: data.scores,
-          word: data.word,
-          drawer: data.drawer,
-          guessedPlayers: data.guessedPlayers || [],
-          noOneGuessed: data.noOneGuessed,
-        });
-      }
+  
+      setRoundResults({
+        round: data.round,
+        totalRounds: data.totalRounds || 3,
+        turnInRound: data.turnInRound,
+        totalTurnsInRound: data.totalTurnsInRound,
+        scores: data.scores,
+        word: data.word,
+        drawer: data.drawer,
+        guessedPlayers: data.guessedPlayers || [],
+        noOneGuessed: data.noOneGuessed,
+        drawerPointsAwarded: data.drawerPointsAwarded,
+        isTurnResult: true, // Flag to distinguish from round complete
+        isLastTurnOfRound: data.turnInRound === data.totalTurnsInRound,
+        isGameEnding: data.round >= data.totalRounds && data.turnInRound === data.totalTurnsInRound
+      });
+      
+      // Show the modal for turn results
+      openModal("roundResult");
+    });
+
+    socket.on("roundComplete", (data: any) => {
+      m.success(`Round ${data.round} completed!`);
+      // Don't show modal here since turnEnd already showed it
+      // The modal will automatically show "Continue to next round" for the last turn
     });
 
     socket.on("gameEnd", (data: any) => {

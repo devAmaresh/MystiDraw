@@ -372,7 +372,8 @@ class GameLogic {
       this.io.to(roomId).emit('roundComplete', {
         round: gameRoom.currentRound,
         totalRounds: GAME_CONFIG.TOTAL_ROUNDS,
-        scores: Object.fromEntries(gameRoom.scores)
+        scores: Object.fromEntries(gameRoom.scores),
+        word: gameRoom.currentWord,
       });
       
       if (gameRoom.currentRound >= GAME_CONFIG.TOTAL_ROUNDS) {
