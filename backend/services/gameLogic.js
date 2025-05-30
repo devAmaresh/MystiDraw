@@ -449,6 +449,68 @@ class GameLogic {
     }, 10000);
   }
 
+  endGameDueToInsufficientPlayers(roomId) {
+    const gameRoom = gameStateManager.getGameRoom(roomId);
+    if (!gameRoom) return;
+
+    console.log(`Ending game in room ${roomId} due to insufficient players`);
+
+    gameRoom.gameState = 'ended';
+
+    // Calculate current rankings using userId -> score mapping
+    const rankings = Array.from(gameRoom.scores.entries())
+      .map(([userId, score]) => {
+        const playerState = gameStateManager.getPlayerByUserId(roomId, userId);
+        return {
+          username: playerState?.username || 'Unknown',
+          score,
+          isConnected: playerState?.isConnected || false
+        };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    console.log(`Game ended in room ${roomId} due to insufficient players. Current rankings:`, rankings);
+
+    this.io.to(roomId).emit('gameEnd', {
+      rankings,
+      totalRounds: GAME_CONFIG.TOTAL_ROUNDS,
+      reason: 'insufficient_players',
+      message: "Game ended - not enough players remaining!",
+      currentRound: gameRoom.currentRound
+    });
+
+    // Reset game state after 5 seconds (shorter since game ended early)
+    setTimeout(() => {
+      const currentGameRoom = gameStateManager.getGameRoom(roomId);
+      if (currentGameRoom) {
+        currentGameRoom.gameState = 'waiting';
+        currentGameRoom.currentRound = 0;
+        currentGameRoom.currentTurnInRound = 0;
+        currentGameRoom.scores.clear();
+        currentGameRoom.currentDrawer = null;
+        currentGameRoom.currentWord = null;
+        currentGameRoom.drawingOrder = [];
+        currentGameRoom.isWordSelectionPhase = false;
+        gameStateManager.resetRevealedPositions(roomId);
+        
+        // Reset all players to not ready
+        for (const [userId, playerState] of currentGameRoom.playerStates) {
+          playerState.isReady = false;
+        }
+        
+        this.io.to(roomId).emit("gameReset", {
+          message: "Game has been reset. Waiting for more players to join!"
+        });
+        
+        this.io.to(roomId).emit("playerUpdate", {
+          players: gameStateManager.getAllPlayers(roomId),
+          playerCount: gameStateManager.getPlayerCount(roomId),
+          canStart: false
+        });
+      }
+    }, 5000);
+  }
+
   canStartGame(roomId) {
     const gameRoom = gameStateManager.getGameRoom(roomId);
     if (!gameRoom) return false;

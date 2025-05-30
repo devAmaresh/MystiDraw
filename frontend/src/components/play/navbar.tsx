@@ -6,7 +6,12 @@ import axios from "axios";
 import { backend_url } from "../../utils/backend_url";
 import { useState } from "react";
 
-const Navbar = () => {
+// Add socket prop interface
+interface NavbarProps {
+  socket?: any; // Add socket as a prop
+}
+
+const Navbar = ({ socket }: NavbarProps) => {
   const username = Cookies.get("username");
   const { roomId } = useParams<{ roomId: string }>();
   const domain = window.location.origin;
@@ -19,6 +24,17 @@ const Navbar = () => {
     const logout = async () => {
       try {
         setLoading(true);
+
+        // FIX: Emit socket event FIRST to properly disconnect from game
+        if (socket && roomId && username) {
+          console.log(`Emitting leaveRoom for ${username} in room ${roomId}`);
+          socket.emit("leaveRoom", roomId, username);
+
+          // Give a small delay to ensure socket event is processed
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
+        // Then call the backend API to remove from database
         const res = await axios.post(
           `${backend_url}/api/logout`,
           { roomId },
@@ -29,15 +45,32 @@ const Navbar = () => {
             },
           }
         );
+
         if (res.status === 200) {
+          // Clean up local storage and cookies
           Cookies.remove("token");
           Cookies.remove("username");
+
+          // Disconnect socket connection
+          if (socket) {
+            socket.disconnect();
+          }
+
           message.success("Left room successfully");
           navigate("/");
         }
       } catch (error) {
         message.error("Failed to leave room");
         console.log(error);
+
+        // Even if API fails, still try to clean up socket and navigate
+        if (socket) {
+          socket.emit("leaveRoom", roomId, username);
+          socket.disconnect();
+        }
+        Cookies.remove("token");
+        Cookies.remove("username");
+        navigate("/");
       } finally {
         setLoading(false);
       }
@@ -81,7 +114,9 @@ const Navbar = () => {
 
           <Button
             type="text"
-            icon={copied ? <LuCopy className="text-green-400" /> : <LuCopy />}
+            icon={
+              copied ? <LuCopy className="text-green-400" /> : <LuCopy />
+            }
             onClick={copyInviteLink}
             className="text-white hover:bg-white/10 border-white/20"
             size="small"

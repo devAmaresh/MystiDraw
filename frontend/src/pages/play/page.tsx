@@ -491,6 +491,20 @@ const Page = () => {
     socket.on("gameEnd", (data: any) => {
       setGameResults(data);
       setGameState((prev) => ({ ...prev, state: "ended" }));
+      
+      // FIX: Show different message for insufficient players
+      if (data.reason === 'insufficient_players') {
+        m.warning({
+          content: data.message,
+          duration: 5,
+        });
+      } else {
+        m.success({
+          content: "Game completed! Check the final results.",
+          duration: 3,
+        });
+      }
+      
       openModal("gameEnd");
     });
 
@@ -689,7 +703,7 @@ const Page = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
-      <Navbar />
+      <Navbar socket={socket}/>
 
       {/* Mobile Menu Button */}
       <div className="lg:hidden fixed top-20 right-4 z-50">

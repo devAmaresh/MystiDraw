@@ -111,28 +111,52 @@ export default function setupSocketHandlers(io) {
       
       const gameRoom = gameStateManager.getGameRoom(roomId);
       if (gameRoom) {
-        const disconnectedPlayer = gameStateManager.disconnectPlayer(roomId, socket.id);
+        // FIX: Use removePlayer instead of disconnectPlayer for intentional leave
+        const removedPlayer = gameStateManager.removePlayer(roomId, socket.id);
         
-        // If current drawer left during their turn, end turn
-        if (gameRoom.currentDrawer === socket.id) {
-          setTimeout(() => {
-            const currentGameRoom = gameStateManager.getGameRoom(roomId);
-            if (currentGameRoom && currentGameRoom.currentDrawer === socket.id) {
-              gameLogic.endTurn(roomId, 'drawerLeft');
-            }
-          }, 5000);
+        // If current drawer left during their turn, end turn immediately
+        if (gameRoom.currentDrawer === removedPlayer?.userId) {
+          console.log(`Current drawer ${username} left the game, ending turn immediately`);
+          gameLogic.endTurn(roomId, 'drawerLeft');
         }
         
-        // Update player list
-        io.to(roomId).emit("playerUpdate", {
-          players: gameStateManager.getAllPlayers(roomId),
-          playerCount: gameStateManager.getPlayerCount(roomId),
-          canStart: false // Reset canStart when someone leaves
-        });
+        // Check if game should end due to insufficient players
+        const connectedPlayersCount = gameStateManager.getPlayerCount(roomId);
+        console.log(`Players remaining after ${username} left: ${connectedPlayersCount}`);
         
-        if (disconnectedPlayer) {
+        // FIX: End game if only 1 or fewer players remain
+        if (connectedPlayersCount <= 1 && gameRoom.gameState === 'playing') {
+          console.log(`Only ${connectedPlayersCount} player(s) remaining, ending game...`);
+          
+          // Clear any running timers
+          if (gameRoom.turnTimer) {
+            clearInterval(gameRoom.turnTimer);
+            gameRoom.turnTimer = null;
+          }
+          if (gameRoom.preparationTimer) {
+            clearInterval(gameRoom.preparationTimer);
+            gameRoom.preparationTimer = null;
+          }
+          
+          // End game with special reason
+          setTimeout(() => {
+            const currentGameRoom = gameStateManager.getGameRoom(roomId);
+            if (currentGameRoom && currentGameRoom.gameState === 'playing') {
+              gameLogic.endGameDueToInsufficientPlayers(roomId);
+            }
+          }, 1000);
+        } else {
+          // Update player list for remaining players
+          io.to(roomId).emit("playerUpdate", {
+            players: gameStateManager.getAllPlayers(roomId),
+            playerCount: connectedPlayersCount,
+            canStart: false // Reset canStart when someone leaves
+          });
+        }
+        
+        if (removedPlayer) {
           io.to(roomId).emit("leaveMessage", {
-            message: `${disconnectedPlayer.username} has disconnected.`,
+            message: `${removedPlayer.username} has left the room.`,
           });
         }
       }
@@ -305,29 +329,54 @@ export default function setupSocketHandlers(io) {
         const disconnectedPlayer = gameStateManager.disconnectPlayer(roomId, socket.id);
         
         // If current drawer disconnected during their turn
-        if (gameRoom.currentDrawer === socket.id) {
+        if (gameRoom.currentDrawer === decoded.userId) {
           console.log(`Current drawer ${decoded.username} disconnected, waiting for reconnection...`);
           setTimeout(() => {
             const currentGameRoom = gameStateManager.getGameRoom(roomId);
-            if (currentGameRoom && currentGameRoom.currentDrawer === socket.id) {
-              console.log(`Drawer ${decoded.username} didn't reconnect, ending turn`);
-              if (currentGameRoom.turnTimer) {
-                clearInterval(currentGameRoom.turnTimer);
-                currentGameRoom.turnTimer = null;
+            if (currentGameRoom && currentGameRoom.currentDrawer === decoded.userId) {
+              // Check if drawer is still disconnected
+              const drawerState = gameStateManager.getPlayerByUserId(roomId, decoded.userId);
+              if (drawerState && !drawerState.isConnected) {
+                console.log(`Drawer ${decoded.username} didn't reconnect, ending turn`);
+                if (currentGameRoom.turnTimer) {
+                  clearInterval(currentGameRoom.turnTimer);
+                  currentGameRoom.turnTimer = null;
+                }
+                if (currentGameRoom.preparationTimer) {
+                  clearInterval(currentGameRoom.preparationTimer);
+                  currentGameRoom.preparationTimer = null;
+                }
+                gameLogic.endTurn(roomId, 'drawerLeft');
               }
-              if (currentGameRoom.preparationTimer) {
-                clearInterval(currentGameRoom.preparationTimer);
-                currentGameRoom.preparationTimer = null;
-              }
-              gameLogic.endTurn(roomId, 'drawerLeft');
             }
           }, 10000);
+        }
+        
+        // FIX: Check if game should end due to insufficient connected players after disconnect
+        const connectedPlayersCount = gameStateManager.getPlayerCount(roomId);
+        console.log(`Connected players after ${decoded.username} disconnected: ${connectedPlayersCount}`);
+        
+        if (connectedPlayersCount <= 1 && gameRoom.gameState === 'playing') {
+          console.log(`Only ${connectedPlayersCount} connected player(s) remaining, waiting for reconnections...`);
+          
+          // Wait longer for reconnections since this is a disconnect, not intentional leave
+          setTimeout(() => {
+            const currentGameRoom = gameStateManager.getGameRoom(roomId);
+            const currentConnectedCount = gameStateManager.getPlayerCount(roomId);
+            
+            if (currentGameRoom && 
+                currentGameRoom.gameState === 'playing' && 
+                currentConnectedCount <= 1) {
+              console.log(`Still only ${currentConnectedCount} connected player(s) after grace period, ending game...`);
+              gameLogic.endGameDueToInsufficientPlayers(roomId);
+            }
+          }, 30000); // 30 seconds grace period for reconnection
         }
         
         // Update player list
         io.to(roomId).emit("playerUpdate", {
           players: gameStateManager.getAllPlayers(roomId),
-          playerCount: gameStateManager.getPlayerCount(roomId),
+          playerCount: connectedPlayersCount,
           canStart: false // Reset canStart when someone disconnects
         });
         
