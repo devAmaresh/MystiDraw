@@ -19,6 +19,7 @@ import {
   LuX,
 } from "react-icons/lu";
 import { backend_url } from "../../utils/backend_url";
+import DrawingTools from "../../components/play/drawingtools";
 
 interface DrawData {
   x: number;
@@ -800,117 +801,46 @@ const Page = () => {
           <div className="flex-1 flex flex-col lg:flex-row gap-4">
             {/* Canvas */}
             <div className="flex-1 bg-white rounded-2xl shadow-lg p-4">
-              <canvas
-                ref={canvasRef}
-                onMouseDown={startDrawing}
-                onMouseUp={stopDrawing}
-                onMouseMove={draw}
-                onMouseLeave={stopDrawing}
-                onTouchStart={startDrawing}
-                onTouchEnd={stopDrawing}
-                onTouchMove={draw}
-                className={`w-full h-full min-h-[400px] lg:min-h-[500px] border-2 border-gray-200 rounded-xl shadow-inner
-                  ${
-                    isCurrentDrawer
-                      ? isErasing
-                        ? "cursor-crosshair"
-                        : "cursor-crosshair"
-                      : "cursor-not-allowed"
-                  }
-                  ${!isCurrentDrawer ? "pointer-events-none" : ""}
-                `}
-                style={{ touchAction: "none" }}
-              />
+              <div className="w-full h-full min-h-full relative">
+                <canvas
+                  ref={canvasRef}
+                  onMouseDown={startDrawing}
+                  onMouseUp={stopDrawing}
+                  onMouseMove={draw}
+                  onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing}
+                  onTouchEnd={stopDrawing}
+                  onTouchMove={draw}
+                  className={`w-full h-full border-2 border-gray-200 rounded-xl shadow-inner absolute inset-0
+                    ${
+                      isCurrentDrawer
+                        ? isErasing
+                          ? "cursor-crosshair"
+                          : "cursor-crosshair"
+                        : "cursor-not-allowed"
+                    }
+                    ${!isCurrentDrawer ? "pointer-events-none" : ""}
+                  `}
+                  style={{ touchAction: "none" }}
+                />
+              </div>
             </div>
 
             {/* Drawing Tools - Desktop */}
             {isCurrentDrawer && (
-              <div className="hidden lg:flex flex-col space-y-2 w-16">
+              <div className="hidden lg:flex flex-col w-16"> {/* Increased width from w-16 to w-20 */}
                 {/* Drawing Tools Card */}
-                <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl p-3 flex flex-col items-center space-y-4">
-                  {/* Tool Title */}
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
-                    <LuPalette className="w-4 h-4 text-purple-600" />
-                  </div>
 
-                  {/* Color Palette */}
-                  <div className="flex flex-col space-y-2">
-                    {colors.map((color) => (
-                      <button
-                        key={color.value}
-                        onClick={() => handleColorChange(color.value)}
-                        className={`w-8 h-8 rounded-lg ${
-                          color.bg
-                        } shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:scale-110 ${
-                          currentColor === color.value && !isErasing
-                            ? "border-gray-800 scale-110 ring-2 ring-gray-300"
-                            : "border-white/50"
-                        }`}
-                        title={color.name}
-                      />
-                    ))}
-                  </div>
+                  <DrawingTools
+                    currentColor={currentColor}
+                    currentStroke={currentStroke}
+                    isErasing={isErasing}
+                    handleColorChange={handleColorChange}
+                    handleStrokeChange={handleStrokeChange}
+                    toggleEraser={toggleEraser}
+                    clearCanvas={clearCanvas}
+                  />
 
-                  {/* Size Indicator */}
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <div
-                        className="bg-gray-800 rounded-full"
-                        style={{
-                          width: `${Math.max(
-                            2,
-                            Math.min(currentStroke / 2, 8)
-                          )}px`,
-                          height: `${Math.max(
-                            2,
-                            Math.min(currentStroke / 2, 8)
-                          )}px`,
-                        }}
-                      />
-                    </div>
-                    <span className="text-xs text-gray-500 font-mono">
-                      {currentStroke}
-                    </span>
-                  </div>
-
-                  {/* Size Slider - Vertical */}
-                  <div className="flex flex-col items-center space-y-2 h-24">
-                    <input
-                      type="range"
-                      min="2"
-                      max="20"
-                      step="2"
-                      value={currentStroke}
-                      onChange={(e) =>
-                        handleStrokeChange(Number(e.target.value))
-                      }
-                      className="h-20 w-2 appearance-none bg-gray-200 rounded-lg slider-vertical"
-                    />
-                  </div>
-
-                  {/* Tool Buttons */}
-                  <div className="flex flex-col space-y-2">
-                    <button
-                      onClick={toggleEraser}
-                      className={`w-8 h-8 rounded-lg border-2 transition-all duration-200 hover:scale-110 ${
-                        isErasing
-                          ? "bg-red-100 border-red-300 text-red-600"
-                          : "bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200"
-                      }`}
-                      title="Eraser"
-                    >
-                      <LuEraser className="w-4 h-4 mx-auto" />
-                    </button>
-
-                    <button
-                      onClick={clearCanvas}
-                      className="w-8 h-8 rounded-lg bg-red-50 border-2 border-red-200 text-red-500 transition-all duration-200 hover:scale-110 hover:bg-red-100"
-                      title="Clear Canvas"
-                    >
-                      <LuTrash2 className="w-4 h-4 mx-auto" />
-                    </button>
-                  </div>
-                </Card>
               </div>
             )}
 
