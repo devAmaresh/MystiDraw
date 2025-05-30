@@ -6,7 +6,7 @@ import {
   LuUsers,
   LuCheckCheck as LuCheckCircle,
 } from "react-icons/lu";
-
+import Cookies from "js-cookie";
 const PlayerList = ({
   players,
   gameState,
@@ -71,6 +71,12 @@ const PlayerList = ({
                   }`}
                 >
                   {player.username}
+                  
+                  {player.username === Cookies.get("username") && (
+                    <span className="ml-1 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-normal">
+                      (you)
+                    </span>
+                  )}
                   {!player.isConnected && " (offline)"}
                 </span>
                 {gameState.currentDrawer === player.username && (

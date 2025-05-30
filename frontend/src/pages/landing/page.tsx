@@ -9,7 +9,7 @@ import { LuUsers, LuMouse, LuTimer } from "react-icons/lu";
 
 const Page = () => {
   const [username, setUsername] = useState(
-    localStorage.getItem("username") || ""
+    Cookies.get("username") || ""
   );
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -35,7 +35,7 @@ const Page = () => {
       return;
     }
     
-    localStorage.setItem("username", username);
+    Cookies.set("username", username.trim(), { expires: 1 });
     async function joinRoom() {
       try {
         setLoading(true);
@@ -55,6 +55,7 @@ const Page = () => {
         
         if (res.status === 200) {
           Cookies.set("token", res.data.token, { expires: 1 });
+          Cookies.set("username", username.trim(), { expires: 1 });
           navigate(`/play/${joinRoomId}`);
         }
       } catch (err: any) {
@@ -81,7 +82,7 @@ const Page = () => {
       return;
     }
     
-    localStorage.setItem("username", username);
+    Cookies.set("username", username.trim(), { expires: 1 });
     async function createRoom() {
       try {
         setLoading(true);

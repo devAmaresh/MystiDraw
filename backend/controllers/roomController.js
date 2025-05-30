@@ -71,11 +71,11 @@ export const joinRoom = async (req, res) => {
       (p) => p.username === username
     );
 
-    if (!existingParticipant) {
-      // Add new participant
-      room.participants.push({ username, score: 0, admin: false });
-      await room.save();
+    if (existingParticipant) {
+      return res.status(400).json({ message: "Username already taken. Please try a different username." });
     }
+    room.participants.push({ username, score: 0, admin: false });
+    await room.save();
 
     // Enhanced JWT token
     const token = jwt.sign(

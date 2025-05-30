@@ -32,7 +32,6 @@ export default function setupSocketHandlers(io) {
       const history = gameStateManager.getDrawHistory(roomId);
       
       // Send current game state to the player
-      socket.emit("canvasHistory", history);
       socket.emit("gameState", {
         state: gameRoom.gameState,
         round: gameRoom.currentRound,
@@ -41,7 +40,8 @@ export default function setupSocketHandlers(io) {
         totalTurnsInRound: gameRoom.totalPlayers,
         players: gameStateManager.getAllPlayers(roomId),
         scores: Object.fromEntries(gameRoom.scores),
-        currentDrawer: gameRoom.currentDrawer ? gameRoom.players.get(gameRoom.currentDrawer)?.username : null,
+        currentDrawer: gameRoom.currentDrawer ? 
+          gameStateManager.getPlayerByUserId(roomId, gameRoom.currentDrawer)?.username : null, // FIX: Send username, not userId
         timeLeft: gameRoom.roundEndTime ? Math.max(0, gameRoom.roundEndTime - Date.now()) : 0
       });
       
@@ -75,7 +75,11 @@ export default function setupSocketHandlers(io) {
       }
       
       // If game is in progress and this is the current drawer, restore drawing state
-      if (gameRoom.gameState === 'playing' && gameRoom.currentDrawer === socket.id) {
+      if (gameRoom.gameState === 'playing' && 
+          gameRoom.currentDrawer === decoded.userId) { // FIX: Compare with userId
+        
+        console.log(`Restoring drawer state for ${decoded.username}`);
+        
         if (gameRoom.isWordSelectionPhase && gameRoom.wordChoices) {
           socket.emit('wordChoices', {
             words: gameRoom.wordChoices,
@@ -84,7 +88,18 @@ export default function setupSocketHandlers(io) {
             turn: gameRoom.currentTurnInRound + 1
           });
         } else if (gameRoom.currentWord) {
+          // Send the actual word to the drawer
           socket.emit('drawerWord', { word: gameRoom.currentWord });
+          
+          // Also send drawing phase event to properly restore UI state
+          socket.emit('drawingPhase', {
+            word: gameRoom.currentWord, // Send actual word to drawer
+            wordLength: gameRoom.currentWord.length,
+            timeLeft: gameRoom.roundEndTime ? Math.max(0, gameRoom.roundEndTime - Date.now()) : 0,
+            round: gameRoom.currentRound,
+            turn: gameRoom.currentTurnInRound + 1,
+            drawer: decoded.username
+          });
         }
       }
     });

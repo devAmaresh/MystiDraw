@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { Button, message} from "antd";
+import { Button, message } from "antd";
 import { LuLogOut, LuCopy, LuUser, LuSparkles } from "react-icons/lu";
 import Cookies from "js-cookie";
 import axios from "axios";
@@ -7,7 +7,7 @@ import { backend_url } from "../../utils/backend_url";
 import { useState } from "react";
 
 const Navbar = () => {
-  const username = localStorage.getItem("username");
+  const username = Cookies.get("username");
   const { roomId } = useParams<{ roomId: string }>();
   const domain = window.location.origin;
 
@@ -30,8 +30,8 @@ const Navbar = () => {
           }
         );
         if (res.status === 200) {
-          localStorage.removeItem("username");
           Cookies.remove("token");
+          Cookies.remove("username");
           message.success("Left room successfully");
           navigate("/");
         }

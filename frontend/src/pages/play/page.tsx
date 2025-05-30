@@ -68,7 +68,7 @@ const Page = () => {
   const [currentStroke, setCurrentStroke] = useState<number>(4);
   const [isErasing, setIsErasing] = useState<boolean>(false);
   const [username, setUsername] = useState<string>(
-    localStorage.getItem("username") || ""
+    Cookies.get("username") || ""
   );
   const [players, setPlayers] = useState<Player[]>([]);
   const [isReady, setIsReady] = useState<boolean>(false);
@@ -169,7 +169,7 @@ const Page = () => {
     if (!socket || !roomId) return;
 
     const handleConnect = () => {
-      const username = localStorage.getItem("username") || "";
+      const username = Cookies.get("username") || "";
       setUsername(username);
       socket.emit("joinRoom", roomId, username);
     };
@@ -284,7 +284,15 @@ const Page = () => {
       console.log("Received gameState:", state); // Debug log
       setGameState(state);
       setTimeLeft(state.timeLeft);
-      setIsCurrentDrawer(state.currentDrawer === username);
+
+      // FIX: Properly determine if current user is the drawer
+      const currentUsername = Cookies.get("username");
+      const isDrawer = state.currentDrawer === currentUsername;
+      setIsCurrentDrawer(isDrawer);
+
+      console.log(
+        `Current drawer: ${state.currentDrawer}, Current user: ${currentUsername}, Is drawer: ${isDrawer}`
+      );
     });
 
     socket.on(
@@ -318,13 +326,17 @@ const Page = () => {
       }));
     });
 
-    // Fix the newTurn handler
+    // Fix the newTurn handler to properly set drawer state
     socket.on("newTurn", (data: any) => {
       console.log("New turn data:", data); // Debug log
       setShowPreparation(true);
       setCurrentTurn(data.turnInRound);
       setTotalTurnsInRound(data.totalTurnsInRound);
-      setIsCurrentDrawer(data.drawer === username);
+
+      // FIX: Use username comparison instead of socket-based comparison
+      const currentUsername = Cookies.get("username");
+      const isDrawer = data.drawer === currentUsername;
+      setIsCurrentDrawer(isDrawer);
 
       // Properly update game state
       setGameState((prev) => ({
@@ -337,7 +349,7 @@ const Page = () => {
 
       closeAllModals();
 
-      if (data.drawer === username) {
+      if (isDrawer) {
         m.info(`Turn ${data.turnInRound}: It's your turn to draw!`);
       } else {
         m.info(
@@ -365,6 +377,11 @@ const Page = () => {
       setShowPreparation(false);
       setCurrentTurn(data.turn);
 
+      // FIX: Properly determine drawer state
+      const currentUsername = Cookies.get("username");
+      const isDrawer = data.drawer === currentUsername;
+      setIsCurrentDrawer(isDrawer);
+
       // Update game state and word hint
       setGameState((prev) => ({
         ...prev,
@@ -374,14 +391,14 @@ const Page = () => {
       }));
 
       // Set initial word hint for non-drawers
-      if (data.drawer !== username) {
+      if (!isDrawer) {
         setWordHint(data.word); // This should be the underscore version
         console.log("Set word hint for guesser:", data.word); // Debug log
       }
 
       closeAllModals();
 
-      if (data.drawer === username) {
+      if (isDrawer) {
         m.success("Start drawing now!");
       } else {
         m.info(`${data.drawer} is now drawing! Try to guess the word!`);
@@ -390,7 +407,12 @@ const Page = () => {
 
     socket.on("drawerWord", (data: any) => {
       console.log("Drawer word received:", data); // Debug log
-      setCurrentWord(data.word);
+
+      // FIX: Only set current word if this user is the drawer
+      const currentUsername = Cookies.get("username");
+      if (gameState.currentDrawer === currentUsername) {
+        setCurrentWord(data.word);
+      }
     });
 
     socket.on("correctGuess", (data: any) => {
@@ -530,7 +552,7 @@ const Page = () => {
       socket.off("gameReset");
       socket.off("drawerPenalty");
     };
-  }, [socket, username, isCurrentDrawer, roomId, players]);
+  }, [socket, username, roomId, players, gameState.currentDrawer]);
 
   // Canvas update on color/stroke change
   useEffect(() => {
@@ -624,7 +646,7 @@ const Page = () => {
     const chatMessage: ChatMessage = {
       message: message.trim(),
       roomId,
-      username: localStorage.getItem("username") || "",
+      username: Cookies.get("username") || "",
     };
 
     socket.emit("chatMessage", chatMessage);
@@ -805,7 +827,9 @@ const Page = () => {
                       <button
                         key={color.value}
                         onClick={() => handleColorChange(color.value)}
-                        className={`w-8 h-8 rounded-lg ${color.bg} shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:scale-110 ${
+                        className={`w-8 h-8 rounded-lg ${
+                          color.bg
+                        } shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:scale-110 ${
                           currentColor === color.value && !isErasing
                             ? "border-gray-800 scale-110 ring-2 ring-gray-300"
                             : "border-white/50"
@@ -821,8 +845,14 @@ const Page = () => {
                       <div
                         className="bg-gray-800 rounded-full"
                         style={{
-                          width: `${Math.max(2, Math.min(currentStroke / 2, 8))}px`,
-                          height: `${Math.max(2, Math.min(currentStroke / 2, 8))}px`,
+                          width: `${Math.max(
+                            2,
+                            Math.min(currentStroke / 2, 8)
+                          )}px`,
+                          height: `${Math.max(
+                            2,
+                            Math.min(currentStroke / 2, 8)
+                          )}px`,
                         }}
                       />
                     </div>
@@ -839,9 +869,10 @@ const Page = () => {
                       max="20"
                       step="2"
                       value={currentStroke}
-                      onChange={(e) => handleStrokeChange(Number(e.target.value))}
+                      onChange={(e) =>
+                        handleStrokeChange(Number(e.target.value))
+                      }
                       className="h-20 w-2 appearance-none bg-gray-200 rounded-lg slider-vertical"
-          
                     />
                   </div>
 
@@ -868,8 +899,6 @@ const Page = () => {
                     </button>
                   </div>
                 </Card>
-
-                
               </div>
             )}
 
