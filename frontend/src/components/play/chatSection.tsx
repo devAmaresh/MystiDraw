@@ -1,6 +1,7 @@
 import { Button, Card } from "antd";
 import { LuMessageSquare, LuSend, LuSmile } from "react-icons/lu";
 import { useEffect } from "react";
+import VoiceInput from "./voiceInput";
 
 const ChatSection = ({
   messages,
@@ -11,12 +12,17 @@ const ChatSection = ({
   handleKeyPress,
   socket,
 }: any) => {
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
-  }, [messages]); // Trigger when messages array changes
+  }, [messages]);
+
+ 
+  const handleTranscriptUpdate = (transcript: string) => {
+    console.log("Transcript from voice input:", transcript);
+    setMessage(transcript);
+  };
 
   return (
     <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl h-96 lg:h-80 flex flex-col">
@@ -45,14 +51,11 @@ const ChatSection = ({
             <div key={index} className="text-sm break-words">
               <span
                 className={`font-semibold ${
-                  msg.username === "System"
-                    ? "text-green-600"
-                    : "text-blue-600"
+                  msg.username === "System" ? "text-green-600" : "text-blue-600"
                 }`}
               >
-                {msg.username === "System"
-                  ? "🤖 System"
-                  : `👤 ${msg.username}`}:
+                {msg.username === "System" ? "🤖 System" : `👤 ${msg.username}`}
+                :
               </span>
               <span className="ml-2 text-gray-700">{msg.message}</span>
             </div>
@@ -61,7 +64,7 @@ const ChatSection = ({
       </div>
 
       {/* Chat Input */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 relative">
         <input
           type="text"
           value={message}
@@ -72,6 +75,14 @@ const ChatSection = ({
           maxLength={100}
           disabled={!socket}
         />
+
+        {/* Voice Input Button */}
+        <VoiceInput
+          onTranscriptUpdate={handleTranscriptUpdate}
+          disabled={!socket}
+          className="relative"
+        />
+
         <Button
           type="primary"
           icon={<LuSend />}

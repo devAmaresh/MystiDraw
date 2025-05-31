@@ -1,6 +1,10 @@
-import { Modal, Button } from "antd";
+import { Modal, Button, notification } from "antd";
 
-const GameEndModal = ({ showGameEndModal, setShowGameEndModal, gameResults }: any) => {
+const GameEndModal = ({
+  showGameEndModal,
+  setShowGameEndModal,
+  gameResults,
+}: any) => {
   if (!gameResults) return null;
 
   return (
@@ -8,9 +12,17 @@ const GameEndModal = ({ showGameEndModal, setShowGameEndModal, gameResults }: an
       title="🎉 Game Finished!"
       open={showGameEndModal}
       footer={
-        <Button 
-          type="primary" 
-          onClick={() => setShowGameEndModal(false)}
+        <Button
+          type="primary"
+          onClick={() => {
+            notification.success({
+              message: "Game Restarted",
+              description:
+                "The game will restart shortly ! Voila 🎉 ..Keep playing",
+              duration: 10,
+            });
+            setShowGameEndModal(false);
+          }}
           size="large"
         >
           Play Again
@@ -41,7 +53,13 @@ const GameEndModal = ({ showGameEndModal, setShowGameEndModal, gameResults }: an
             >
               <div className="flex items-center space-x-3">
                 <span className="text-2xl font-bold">
-                  {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`}
+                  {index === 0
+                    ? "🥇"
+                    : index === 1
+                    ? "🥈"
+                    : index === 2
+                    ? "🥉"
+                    : `${index + 1}.`}
                 </span>
                 <span className="font-bold text-lg">{player.username}</span>
               </div>

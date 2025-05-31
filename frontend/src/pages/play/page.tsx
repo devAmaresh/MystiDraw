@@ -20,6 +20,7 @@ import {
 } from "react-icons/lu";
 import { backend_url } from "../../utils/backend_url";
 import DrawingTools from "../../components/play/drawingtools";
+import { useVoiceFeedback } from "../../hooks/useVoiceFeedback";
 
 interface DrawData {
   x: number;
@@ -60,6 +61,7 @@ const Page = () => {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
   const chatRef = useRef<HTMLDivElement | null>(null);
+  const { speak } = useVoiceFeedback({ enabled: true, volume: 0.3 });
 
   // State management
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -334,7 +336,7 @@ const Page = () => {
       setCurrentTurn(data.turnInRound);
       setTotalTurnsInRound(data.totalTurnsInRound);
 
-      // FIX: Use username comparison instead of socket-based comparison
+      
       const currentUsername = Cookies.get("username");
       const isDrawer = data.drawer === currentUsername;
       setIsCurrentDrawer(isDrawer);
@@ -351,8 +353,10 @@ const Page = () => {
       closeAllModals();
 
       if (isDrawer) {
+        speak("It's your turn to draw!");
         m.info(`Turn ${data.turnInRound}: It's your turn to draw!`);
       } else {
+        speak(`${data.drawer} will draw next!`);
         m.info(
           `Turn ${data.turnInRound}: ${data.drawer} is preparing to draw!`
         );
@@ -372,13 +376,13 @@ const Page = () => {
       openModal("wordSelect");
     });
 
-    // Fix the drawingPhase handler
+    
     socket.on("drawingPhase", (data: any) => {
       console.log("Drawing phase started:", data); // Debug log
       setShowPreparation(false);
       setCurrentTurn(data.turn);
 
-      // FIX: Properly determine drawer state
+      
       const currentUsername = Cookies.get("username");
       const isDrawer = data.drawer === currentUsername;
       setIsCurrentDrawer(isDrawer);
@@ -409,7 +413,7 @@ const Page = () => {
     socket.on("drawerWord", (data: any) => {
       console.log("Drawer word received:", data); // Debug log
 
-      // FIX: Only set current word if this user is the drawer
+      
       const currentUsername = Cookies.get("username");
       if (gameState.currentDrawer === currentUsername) {
         setCurrentWord(data.word);
@@ -418,6 +422,11 @@ const Page = () => {
 
     socket.on("correctGuess", (data: any) => {
       m.success(`${data.username} guessed correctly! +${data.points} points`);
+      if (data.username === Cookies.get("username")) {
+        speak("Correct! Well done!");
+      } else {
+        speak(`${data.username} got it right!`);
+      }  
     });
 
     socket.on("scoreUpdate", (data: any) => {
