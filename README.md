@@ -31,6 +31,9 @@
 - 🔐 **JWT Authentication** - Secure token-based user sessions
 - 📱 **Responsive Design** - Works on desktop and mobile devices
 - ⚡ **Real-time Communication** - Instant updates via WebSockets
+- 🖌️ **Customizable Drawing Tools** - Choose colors, brush sizes, and more
+- 🗣️ **Voice Input** - Use speech-to-text to chat
+- 💡 Smart Hints – Automatically get helpful hints if you're stuck for too long
 
 ## 🎮 How to Play
 
@@ -44,7 +47,7 @@
 ### 🎯 Scoring
 
 - **First to guess**: 120 points
-- **Second to guess**: 110 points  
+- **Second to guess**: 110 points
 - **Third to guess**: 100 points
 - **Late guess**: 80 points
 - **Drawer bonus**: 50 points (when someone guesses)
@@ -53,6 +56,7 @@
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **React 18** with TypeScript
 - **Socket.IO Client** for real-time communication
 - **HTML5 Canvas** for drawing functionality
@@ -60,6 +64,7 @@
 - **Tailwind CSS** for styling
 
 ### Backend
+
 - **Node.js** with Express
 - **Socket.IO** for WebSocket communication
 - **MongoDB** with Mongoose for data persistence
@@ -70,33 +75,37 @@
 
 ### Prerequisites
 
-- Node.js (v16+ recommended)
+- Node.js (v18+ recommended)
 - MongoDB (local or Atlas)
-- npm or yarn
+- npm
 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/devAmaresh/mystidraw.git
    cd mystidraw
    ```
 
 2. **Install backend dependencies**
+
    ```bash
    cd backend
    npm install
    ```
 
 3. **Install frontend dependencies**
+
    ```bash
    cd ../frontend
    npm install
    ```
 
 4. **Setup environment variables**
-   
+
    Create `.env` in the backend directory:
+
    ```env
    PORT=3000
    JWT_SECRET=your_super_secret_jwt_key_here
@@ -108,19 +117,21 @@
 5. **Run the application**
 
    **Backend** (Terminal 1):
+
    ```bash
    cd backend
    npm run dev
    ```
 
    **Frontend** (Terminal 2):
+
    ```bash
    cd frontend
    npm run dev
    ```
 
 6. **Open your browser**
-   
+
    Navigate to `http://localhost:5173`
 
 ## 📁 Project Structure
@@ -172,11 +183,13 @@ export const GAME_CONFIG = {
 ## 🚀 Deployment
 
 ### Frontend (Vercel)
+
 1. Connect your GitHub repo to Vercel
 2. Set build command: `npm run build`
 3. Set environment variables in Vercel dashboard
 
 ### Backend (Render/Railway)
+
 1. Connect your GitHub repo
 2. Set start command: `npm start`
 3. Add environment variables in dashboard

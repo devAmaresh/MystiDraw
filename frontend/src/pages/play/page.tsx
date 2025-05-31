@@ -61,7 +61,7 @@ const Page = () => {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
   const chatRef = useRef<HTMLDivElement | null>(null);
-  const { speak } = useVoiceFeedback({ enabled: true, volume: 0.3 });
+  const { speak } = useVoiceFeedback({ enabled: true, volume: 1 });
 
   // State management
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -184,7 +184,7 @@ const Page = () => {
     socket.on("connect", handleConnect);
 
     socket.on("disconnect", () => {
-      m.warning("Disconnected from server. Trying to reconnect...");
+      m.warning("Disconnected from server. ");
     });
 
     socket.io.on("reconnect", () => {
