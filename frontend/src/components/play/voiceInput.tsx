@@ -33,7 +33,7 @@ const VoiceInput = ({
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<number | null>(null);
   const isStoppingRef = useRef(false);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -56,7 +56,7 @@ const VoiceInput = ({
   // FIX: Comprehensive cleanup with stream management
   const cleanup = () => {
     if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+      window.clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
 
@@ -166,7 +166,7 @@ const VoiceInput = ({
       setIsListening(true);
       m.info("🎤 Listening... Speak now!");
 
-      timeoutRef.current = setTimeout(() => {
+      timeoutRef.current = window.setTimeout(() => {
         if (recognitionRef.current && isListening && !isStoppingRef.current) {
           m.info("Voice input completed");
           gracefulStop();
@@ -178,7 +178,7 @@ const VoiceInput = ({
       console.log("Speech recognition ended");
 
       // FIX: Add delay to ensure proper cleanup
-      setTimeout(() => {
+      window.setTimeout(() => {
         setIsListening(false);
         isStoppingRef.current = false;
 
@@ -191,7 +191,7 @@ const VoiceInput = ({
         }
 
         if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
+          window.clearTimeout(timeoutRef.current);
           timeoutRef.current = null;
         }
       }, 100);
@@ -276,7 +276,7 @@ const VoiceInput = ({
     }
 
     // FIX: Force cleanup after a short delay
-    setTimeout(() => {
+    window.setTimeout(() => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => {
           track.stop();
@@ -287,7 +287,7 @@ const VoiceInput = ({
     }, 500);
 
     if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+      window.clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
   };
